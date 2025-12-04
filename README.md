@@ -61,3 +61,4 @@ GitHub Actions workflow:
 - Builds and pushes Docker image to GHCR:
 
     ghcr.io/<github-username>/predictor-fe:<tag>
+

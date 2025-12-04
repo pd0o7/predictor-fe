@@ -1,0 +1,21 @@
+services:
+  predictor-fe:
+    image: predictor-fe-dev
+    container_name: predictor-fe-dev
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: pnpm dev
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_APP_ENV: dev
+      PORT: 3000
+    volumes:
+      - ./app:/usr/src/app/app
+      - ./tests:/usr/src/app/tests
+      - ./public:/usr/src/app/public
+      - /usr/src/app/node_modules
+    tty: true
+    stdin_open: true

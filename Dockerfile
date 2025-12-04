@@ -1,35 +1,36 @@
+# ---------- BUILD STAGE ----------
 FROM node:20-alpine AS builder
+WORKDIR /app
 
-# Enable pnpm via corepack
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm
+RUN npm install -g pnpm
 
-WORKDIR /usr/src/app
+# Install dependencies
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
-COPY package.json ./
-COPY tsconfig.json ./
-COPY next.config.js ./
+# Copy all source
+COPY . .
 
-RUN pnpm install --frozen-lockfile || pnpm install
-
-COPY app ./app
-
+# Build Next.js (generates .next/)
 RUN pnpm build
 
-# --- Runtime image ---
-FROM node:20-alpine
 
-WORKDIR /usr/src/app
+# ---------- RUNTIME STAGE ----------
+FROM node:20-alpine AS runner
+WORKDIR /app
 
 ENV NODE_ENV=production
-ENV NEXT_PUBLIC_APP_ENV=prod
 ENV PORT=3000
 
-COPY --from=builder /usr/src/app/package.json ./
-COPY --from=builder /usr/src/app/node_modules ./node_modules
-COPY --from=builder /usr/src/app/next.config.js ./next.config.js
-COPY --from=builder /usr/src/app/.next ./.next
-COPY --from=builder /usr/src/app/app ./app
+# Copy production files
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/next.config.js ./next.config.js
 
 EXPOSE 3000
 
-CMD ["pnpm", "start"]
+# Start Next.js production server
+CMD ["node", "node_modules/next/dist/bin/next", "start", "-p", "3000"]
